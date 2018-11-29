@@ -8,16 +8,13 @@ import random
 from pygame.locals import *
 
 fpsClock = pygame.time.Clock()
-FPS = 30
-
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super(Player, self).__init__()
-        self.surf = pygame.Surface((75, 25))
-        self.surf.fill((255, 255, 255))
-        self.rect = self.surf.get_rect()
-        self.rect.center = (0, 300)
+        self.image = pygame.image.load('./images/jet.png').convert()
+        self.image.set_colorkey((255, 255, 255), RLEACCEL)
+        self.rect = self.image.get_rect()
 
     def update(self, pressed_keys):
         if pressed_keys[K_UP]:
@@ -43,11 +40,10 @@ class Player(pygame.sprite.Sprite):
 class Enemy(pygame.sprite.Sprite):
     def __init__(self):
         super(Enemy, self).__init__()
-        self.surf = pygame.Surface((20, 10))
-        self.surf.fill((255, 128, 192))
-        self.rect = self.surf.get_rect(
-            center=(random.randint(820, 900), random.randint(0, 600))
-        )
+        self.image = pygame.image.load('./images/missile.png').convert()
+        self.image.set_colorkey((255, 255, 255), RLEACCEL)
+        self.rect = self.image.get_rect(
+            center=(random.randint(820, 900), random.randint(0, 600)))
         self.speed = random.randint(5, 20)
 
     def update(self):
@@ -55,6 +51,20 @@ class Enemy(pygame.sprite.Sprite):
         if self.rect.right < 0:
             self.kill()
 
+
+class Cloud(pygame.sprite.Sprite):
+    def __init__(self):
+        super(Cloud, self).__init__()
+        self.image = pygame.image.load('./images/cloud.png').convert()
+        self.image.set_colorkey((0, 0, 0), RLEACCEL)
+        self.rect = self.image.get_rect(center=(
+            random.randint(820, 900), random.randint(0, 600))
+        )
+
+    def update(self):
+        self.rect.move_ip(-5, 0)
+        if self.rect.right < 0:
+            self.kill()
 
 # initialize pygame
 pygame.init()
@@ -66,14 +76,17 @@ screen = pygame.display.set_mode((800, 600))
 # Create a custom event for adding a new enemy.
 ADDENEMY = pygame.USEREVENT + 1
 pygame.time.set_timer(ADDENEMY, 250)
+ADDCLOUD = pygame.USEREVENT + 2
+pygame.time.set_timer(ADDCLOUD, 1000)
 
 # create our 'player', right now he's just a rectangle
 player = Player()
 
 background = pygame.Surface(screen.get_size())
-background.fill((0, 0, 0))
+background.fill((135, 206, 250))
 
 enemies = pygame.sprite.Group()
+clouds = pygame.sprite.Group()
 all_sprites = pygame.sprite.Group()
 all_sprites.add(player)
 
@@ -86,19 +99,24 @@ while running:
                 running = False
         elif event.type == QUIT:
             running = False
-        elif(event.type == ADDENEMY):
+        elif event.type == ADDENEMY:
             new_enemy = Enemy()
             enemies.add(new_enemy)
             all_sprites.add(new_enemy)
+        elif event.type == ADDCLOUD:
+            new_cloud = Cloud()
+            all_sprites.add(new_cloud)
+            clouds.add(new_cloud)
     screen.blit(background, (0, 0))
     pressed_keys = pygame.key.get_pressed()
     player.update(pressed_keys)
     enemies.update()
+    clouds.update()
     for entity in all_sprites:
-        screen.blit(entity.surf, entity.rect)
+        screen.blit(entity.image, entity.rect)
 
     if pygame.sprite.spritecollideany(player, enemies):
         player.kill()
 
     pygame.display.flip()
-    fpsClock.tick(FPS)
+    fpsClock.tick(30)
